@@ -1,0 +1,373 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model announcements {
+  id            Int       @id @default(autoincrement())
+  course_id     Int?
+  instructor_id Int?
+  title         String    @db.VarChar(200)
+  content       String
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+
+  // Relations
+  courses               courses?                   @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  users                 users?                     @relation(fields: [instructor_id], references: [id])
+  attachments           announcement_attachments[] // NEW: many files per announcement
+  announcement_comments announcement_comments[]
+  views                 announcement_views[]
+}
+
+model announcement_attachments {
+  id              Int      @id @default(autoincrement())
+  announcement_id Int
+  file_url        String
+  file_name       String?
+  file_type       String? // pdf, docx, jpg, mp4, txt...
+  file_size       Int? // bytes
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+
+  announcements announcements @relation(fields: [announcement_id], references: [id], onDelete: Cascade)
+}
+
+model assignments {
+  id                 Int                      @id @default(autoincrement())
+  course_id          Int?
+  instructor_id      Int?
+  title              String                   @db.VarChar(200)
+  description        String?
+  start_date         DateTime?                @db.Timestamp(6)
+  deadline           DateTime?                @db.Timestamp(6)
+  late_deadline      DateTime?                @db.Timestamp(6)
+  allow_late         Boolean?                 @default(false)
+  max_attempts       Int?                     @default(1)
+  file_format        String?                  @db.VarChar(20)
+  file_size_limit_mb Int?                     @default(10)
+  created_at         DateTime?                @default(now()) @db.Timestamp(6)
+  courses            courses?                 @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users              users?                   @relation(fields: [instructor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  submissions        submissions[]
+  attachments        assignment_attachments[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model courses {
+  id                Int                  @id @default(autoincrement())
+  semester_id       Int?
+  code              String               @db.VarChar(20)
+  name              String               @db.VarChar(100)
+  sessions          Int?
+  instructor_id     Int?
+  created_at        DateTime?            @default(now()) @db.Timestamp(6)
+  announcements     announcements[]
+  assignments       assignments[]
+  users             users?               @relation(fields: [instructor_id], references: [id], onUpdate: NoAction)
+  semesters         semesters?           @relation(fields: [semester_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  groups            groups[]
+  materials         materials[]
+  quizzes           quizzes[]
+  quizQuestionBanks quiz_question_bank[]
+}
+
+model groups {
+  id             Int              @id @default(autoincrement())
+  course_id      Int?
+  name           String           @db.VarChar(50)
+  courses        courses?         @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  student_groups student_groups[]
+}
+
+model materials {
+  id            Int                    @id @default(autoincrement())
+  course_id     Int?
+  instructor_id Int?
+  title         String?                @db.VarChar(200)
+  description   String?
+  file_url      String?
+  created_at    DateTime?              @default(now()) @db.Timestamp(6)
+  courses       courses?               @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users         users?                 @relation(fields: [instructor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  attachments   material_attachments[]
+  views         material_views[]
+}
+
+model notifications {
+  id         Int       @id @default(autoincrement())
+  student_id Int?
+  title      String?   @db.VarChar(100)
+  message    String?
+  is_read    Boolean?  @default(false)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  students   students? @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model quiz_attempts {
+  id                     Int                      @id @default(autoincrement())
+  quiz_id                Int?
+  student_id             Int?
+  attempt_no             Int?                     @default(1)
+  score                  Decimal?                 @db.Decimal(5, 2)
+  started_at             DateTime?                @db.Timestamp(6)
+  submitted_at           DateTime?                @db.Timestamp(6)
+  quizzes                quizzes?                 @relation(fields: [quiz_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  students               students?                @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  quiz_attempt_questions quiz_attempt_questions[]
+
+  @@unique([quiz_id, student_id, attempt_no])
+}
+
+model quizzes {
+  id               Int       @id @default(autoincrement())
+  course_id        Int?
+  instructor_id    Int?
+  title            String?   @db.VarChar(100)
+  open_time        DateTime? @db.Timestamp(6)
+  close_time       DateTime? @db.Timestamp(6)
+  duration_minutes Int?
+  max_attempts     Int?      @default(1)
+
+  // 🔥 BẮT BUỘC PHẢI THÊM 3 TRƯỜNG NÀY
+  random_easy   Int? @default(0)
+  random_medium Int? @default(0)
+  random_hard   Int? @default(0)
+
+  created_at    DateTime?       @default(now()) @db.Timestamp(6)
+  quiz_attempts quiz_attempts[]
+  courses       courses?        @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  users         users?          @relation(fields: [instructor_id], references: [id])
+}
+
+model semesters {
+  id         Int       @id @default(autoincrement())
+  code       String    @unique @db.VarChar(20)
+  name       String    @db.VarChar(100)
+  start_date DateTime? @db.Date
+  end_date   DateTime? @db.Date
+  courses    courses[]
+}
+
+model student_groups {
+  id         Int       @id @default(autoincrement())
+  group_id   Int?
+  student_id Int?
+  groups     groups?   @relation(fields: [group_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  students   students? @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([group_id, student_id])
+}
+
+model students {
+  id                 Int                  @id @default(autoincrement())
+  user_id            Int?
+  student_code       String               @unique @db.VarChar(20)
+  year               Int?
+  notifications      notifications[]
+  quiz_attempts      quiz_attempts[]
+  student_groups     student_groups[]
+  users              users?               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  submissions        submissions[]
+  announcement_views announcement_views[]
+  material_views     material_views[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model submissions {
+  id            Int                      @id @default(autoincrement())
+  assignment_id Int?
+  student_id    Int?
+  attempt_no    Int?                     @default(1)
+  file_url      String?
+  submitted_at  DateTime?                @db.Timestamp(6)
+  grade         Decimal?                 @db.Decimal(5, 2)
+  status        String?                  @db.VarChar(20)
+  assignments   assignments?             @relation(fields: [assignment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  students      students?                @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  attachments   submission_attachments[]
+
+  @@unique([assignment_id, student_id, attempt_no])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id                    Int                     @id @default(autoincrement())
+  username              String                  @unique @db.VarChar(100)
+  password_hash         String
+  full_name             String                  @db.VarChar(100)
+  email                 String                  @unique @db.VarChar(100)
+  avatar_url            String?
+  role                  String                  @db.VarChar(20)
+  created_at            DateTime?               @default(now()) @db.Timestamp(6)
+  announcements         announcements[]
+  assignments           assignments[]
+  courses               courses[]
+  materials             materials[]
+  quizzes               quizzes[]
+  students              students[]
+  announcement_comments announcement_comments[]
+  instructorChats       conversations[]         @relation("InstructorChats")
+  studentChats          conversations[]         @relation("StudentUserChats")
+
+  sentMessages     messages[] @relation("SentMessages")
+  receivedMessages messages[] @relation("ReceivedMessages")
+}
+
+model assignment_attachments {
+  id            Int      @id @default(autoincrement())
+  assignment_id Int
+  file_url      String
+  file_name     String?
+  file_type     String? // pdf, docx, png...
+  file_size     Int? // bytes
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+
+  assignments assignments @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
+}
+
+model submission_attachments {
+  id            Int      @id @default(autoincrement())
+  submission_id Int
+  file_url      String
+  file_name     String?
+  file_type     String?
+  file_size     Int?
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+
+  submissions submissions @relation(fields: [submission_id], references: [id], onDelete: Cascade)
+}
+
+model announcement_comments {
+  id              Int      @id @default(autoincrement())
+  announcement_id Int
+  user_id         Int
+  content         String
+  created_at      DateTime @default(now())
+
+  // Relations
+  announcements announcements @relation(fields: [announcement_id], references: [id], onDelete: Cascade)
+  users         users         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model quiz_attempt_questions {
+  id              Int @id @default(autoincrement())
+  quiz_attempt_id Int
+  question_id     Int
+
+  selected_option String?  @db.VarChar(1) // null khi chưa chọn
+  is_correct      Boolean? // null khi chưa submit
+  order_index     Int? // để hiển thị theo thứ tự random
+
+  quiz_attempts      quiz_attempts      @relation(fields: [quiz_attempt_id], references: [id], onDelete: Cascade)
+  quiz_question_bank quiz_question_bank @relation(fields: [question_id], references: [id], onDelete: Cascade)
+}
+
+model quiz_question_bank {
+  id             Int      @id @default(autoincrement())
+  course_id      Int
+  question_text  String
+  option_a       String
+  option_b       String
+  option_c       String
+  option_d       String
+  correct_option String   @db.VarChar(1) // 'a','b','c','d'
+  difficulty     String   @db.VarChar(20) // easy, medium, hard
+  created_at     DateTime @default(now())
+
+  courses courses @relation(fields: [course_id], references: [id], onDelete: Cascade)
+
+  quiz_attempt_questions quiz_attempt_questions[]
+}
+
+model material_attachments {
+  id          Int      @id @default(autoincrement())
+  material_id Int
+  file_url    String
+  file_name   String?
+  file_type   String? // pdf, docx, png, mp4...
+  file_size   Int? // bytes
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+
+  materials materials @relation(fields: [material_id], references: [id], onDelete: Cascade)
+}
+
+model announcement_views {
+  id              Int      @id @default(autoincrement())
+  announcement_id Int
+  student_id      Int
+  viewed_at       DateTime @default(now())
+
+  announcements announcements @relation(fields: [announcement_id], references: [id], onDelete: Cascade)
+  students      students      @relation(fields: [student_id], references: [id], onDelete: Cascade)
+
+  @@unique([announcement_id, student_id]) // mỗi SV chỉ đánh dấu viewed 1 lần
+}
+
+model material_views {
+  id          Int      @id @default(autoincrement())
+  material_id Int
+  student_id  Int
+  viewed_at   DateTime @default(now())
+
+  materials materials @relation(fields: [material_id], references: [id], onDelete: Cascade)
+  students  students  @relation(fields: [student_id], references: [id], onDelete: Cascade)
+
+  @@unique([material_id, student_id])
+}
+
+model conversations {
+  id              Int      @id @default(autoincrement())
+  instructor_id   Int // FK -> users.id
+  student_user_id Int // FK -> users.id
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  instructor  users @relation("InstructorChats", fields: [instructor_id], references: [id])
+  studentUser users @relation("StudentUserChats", fields: [student_user_id], references: [id])
+
+  messages messages[]
+
+  // Đảm bảo chỉ 1 cuộc chat / mỗi cặp Instructor ↔ Student
+  @@unique([instructor_id, student_user_id])
+}
+
+model messages {
+  id              Int @id @default(autoincrement())
+  conversation_id Int
+  sender_id       Int // FK -> users.id
+  receiver_id     Int // FK -> users.id
+
+  content    String?
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  // Relations
+  conversation conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  sender       users         @relation("SentMessages", fields: [sender_id], references: [id])
+  receiver     users         @relation("ReceivedMessages", fields: [receiver_id], references: [id])
+
+  attachments message_attachments[]
+
+  @@index([conversation_id])
+  @@index([receiver_id])
+}
+
+model message_attachments {
+  id         Int @id @default(autoincrement())
+  message_id Int
+
+  file_url   String
+  file_name  String?
+  file_type  String? // pdf, png, mp4...
+  file_size  Int? // bytes
+  created_at DateTime @default(now())
+
+  // Relations
+  messages messages @relation(fields: [message_id], references: [id], onDelete: Cascade)
+
+  @@index([message_id])
+}
