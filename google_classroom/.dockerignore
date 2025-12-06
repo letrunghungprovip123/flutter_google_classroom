@@ -1,0 +1,22 @@
+# Flutter & build cache
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+pubspec.lock
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS user files
+.DS_Store
+*.log
+
+# Node & Web-output (nếu dùng Tailwind hoặc JS)
+node_modules/
+
+# Generated files
+.env

@@ -1,0 +1,43 @@
+# ================================
+# 🚫 Files & Folders to ignore
+# ================================
+
+# Dependencies do not copy — will be reinstalled inside Docker
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Build output
+dist/
+.prisma/
+
+# Local development environments
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Prisma Engine binaries (Docker sẽ generate lại)
+.prisma/client/
+
+# Cache & temp
+.tmp/
+.cache/
+
+# IDE configs
+.idea/
+.vscode/
+*.iml
+
+# System files
+.DS_Store
+
+# Test files & coverage
+coverage/
+test-results/
+*.spec.ts
+
+# Files created by OS
+Thumbs.db
