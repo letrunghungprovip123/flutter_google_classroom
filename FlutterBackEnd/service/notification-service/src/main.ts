@@ -7,7 +7,7 @@ async function bootstrap() {
     {
       transport: Transport.RMQ,
       options: {
-        urls: ['amqp://flutter:1234@rabbitmq:5672'],
+        urls: ['amqp://flutter:1234@localhost:5672'],
         queue: 'notification_queue',
         queueOptions: {
           durable: false,

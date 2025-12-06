@@ -157,7 +157,6 @@ export class QuizAttemptsService {
 
         if (isCorrect) correct++;
 
-        // Prepare update operation
         updateOps.push(
           this.prisma.quiz_attempt_questions.update({
             where: { id: q.id },
@@ -169,12 +168,15 @@ export class QuizAttemptsService {
         );
       }
 
-      // Chạy update đồng thời
-      await Promise.all(updateOps);
+      // 🚀 Update tất cả trong 1 transaction để tránh quá tải connection
+      if (updateOps.length > 0) {
+        await this.prisma.$transaction(updateOps);
+      }
 
       // 4. Tính điểm (thang 10)
       const total = attemptQuestions.length;
-      const score = total > 0 ? (correct / total) * 10 : 0;
+      let score = total > 0 ? (correct / total) * 10 : 0;
+      score = Math.round(score * 100) / 100; // làm tròn 2 số thập phân
 
       // 5. Update bảng quiz_attempts
       const updatedAttempt = await this.prisma.quiz_attempts.update({
@@ -184,11 +186,6 @@ export class QuizAttemptsService {
           submitted_at: now,
         },
       });
-
-      console.log(score);
-      console.log(correct);
-      console.log(total);
-      console.log(updatedAttempt);
       return {
         message: 'Nộp quiz thành công',
         score,

@@ -7,10 +7,14 @@ import {
 } from 'src/common/utils/prisma-error.util';
 import { CreateQuestionBankDto, CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
+import { AiService } from 'src/ai/ai.service';
 
 @Injectable()
 export class QuizzesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ai: AiService,
+  ) {}
 
   // GET_ALL
   async getAll(filter: { courseId?: number }) {
@@ -30,6 +34,27 @@ export class QuizzesService {
     }
   }
 
+  async generateAi(body: any) {
+    try {
+      const result = await this.ai.generateSuggestion(body); // gọi service Gemini
+      let raw = result;
+
+      if (typeof raw !== 'string') {
+        throw new Error('Invalid raw AI format (not string)');
+      }
+
+      // 🔥 Strip ```json ... ```
+      raw = raw
+        .trim()
+        .replace(/^```json/i, '')
+        .replace(/^```/, '')
+        .replace(/```$/, '');
+
+      return raw;
+    } catch (error) {
+      return error;
+    }
+  }
   // GET_BY_ID
   async getById(id: number) {
     try {

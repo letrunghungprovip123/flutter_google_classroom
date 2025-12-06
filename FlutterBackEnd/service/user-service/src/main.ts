@@ -3,7 +3,7 @@ import { AppModule } from './app.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
-  const rmqUrl = 'amqp://flutter:1234@rabbitmq:5672';
+  const rmqUrl = 'amqp://flutter:1234@localhost:5672';
   console.log('🚀 USER SERVICE STARTING...');
   console.log('🔌 RabbitMQ URL =', rmqUrl);
 

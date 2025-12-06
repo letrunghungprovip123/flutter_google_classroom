@@ -109,6 +109,7 @@ export const RMQ_PATTERN_QUESTION_BANK = {
   DELETE: 'questionbank.delete',
   GET_ALL_BY_COURSE: 'questionbank.getAllByCourse',
   GET_BY_ID: 'questionbank.getById',
+  CREATE_AI : 'create_ai'
 };
 
 export const RMQ_PATTERN_STUDENT = {

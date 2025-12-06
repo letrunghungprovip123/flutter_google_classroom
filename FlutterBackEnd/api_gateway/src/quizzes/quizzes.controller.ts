@@ -53,6 +53,18 @@ export class QuizzesController {
     }
   }
 
+  @Post('generate-ai')
+  async generateAi(@Body() dto: any) {
+    try {
+      console.log(dto);
+      return await lastValueFrom(
+        this.client.send({ cmd: RMQ_PATTERN_QUESTION_BANK.CREATE_AI }, dto),
+      );
+    } catch (error) {
+      throwHttpFromRpc(error);
+    }
+  }
+
   @Patch(':id')
   async update(@Param('id', ParseIntPipe) id: number, @Body() dto: any) {
     try {

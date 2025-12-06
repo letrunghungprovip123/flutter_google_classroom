@@ -47,7 +47,7 @@ class _StudentCourseDetailPageState
             course: widget.course,
             announcements: announcements,
           ),
-          StudentAssignmentsPage(course : widget.course),
+          StudentAssignmentsPage(course: widget.course),
           StudentPeoplePage(course: widget.course),
         ];
 
@@ -59,6 +59,7 @@ class _StudentCourseDetailPageState
           // =======================
           appBar: AppBar(
             backgroundColor: Colors.black,
+            iconTheme: const IconThemeData(color: Colors.white),
             elevation: 0,
             title: Text(
               widget.course.name,

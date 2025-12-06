@@ -34,6 +34,11 @@ export class QuizzesController {
     return this.quizzesService.delete(id);
   }
 
+
+  @MessagePattern({cmd :RMQ_PATTERN_QUESTION_BANK.CREATE_AI})
+  generateAi(@Payload() data : any){
+    return this.quizzesService.generateAi(data);
+  }
   // =======================================
   // QUESTION BANK MessagePattern
   // =======================================

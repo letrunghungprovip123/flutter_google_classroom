@@ -371,19 +371,6 @@ class StudentAssignmentsPage extends ConsumerWidget {
                                   _handleQuizMenu(value, quizId, context, ref),
                               itemBuilder: (_) => const [
                                 PopupMenuItem(
-                                  value: "edit",
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.edit, color: Colors.blue),
-                                      SizedBox(width: 10),
-                                      Text(
-                                        "Sửa",
-                                        style: TextStyle(color: Colors.white),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                PopupMenuItem(
                                   value: "delete",
                                   child: Row(
                                     children: [

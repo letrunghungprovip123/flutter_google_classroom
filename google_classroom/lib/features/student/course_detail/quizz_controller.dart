@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 
@@ -21,6 +23,50 @@ final quizzesProvider = FutureProvider.family<List<dynamic>, int>((
   final data = res.data["data"] as List? ?? [];
   return data;
 });
+
+/// ===============================
+/// GENERATE QUIZ WITH AI
+/// POST /quizzes/generate-ai
+/// ===============================
+final generateAiQuizProvider = FutureProvider.family
+    .autoDispose<List<Map<String, dynamic>>, Map<String, dynamic>>(
+  (ref, payload) async {
+    final dio = DioClient.instance.dio;
+
+    try {
+      final response = await dio.post("/quizzes/generate-ai", data: payload);
+      final data = response.data;
+
+      print("📌 RAW RESPONSE = $data (${data.runtimeType})");
+
+      dynamic parsed = data;
+
+      /// Nếu backend trả về String JSON → decode
+      if (data is String) {
+        parsed = jsonDecode(data);
+      }
+
+      /// Nếu trả về trực tiếp dạng list JSON
+      if (parsed is List) {
+        return parsed.map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+
+      /// Nếu trả về dạng { questions: [...] }
+      if (parsed is Map && parsed["questions"] is List) {
+        final list = parsed["questions"] as List;
+        return list.map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+
+      throw Exception("Invalid AI response format");
+    } catch (e) {
+      print("🔥 AI ERROR = $e");
+      if (e is DioException) {
+        print("🔥 BACKEND ERROR BODY = ${e.response?.data}");
+      }
+      throw Exception("AI generate failed: $e");
+    }
+  },
+);
 
 final quizDetailProvider = FutureProvider.family<Map<String, dynamic>, int>((
   ref,
@@ -57,19 +103,19 @@ final questionBankProvider = FutureProvider.family<List<dynamic>, int>((
 // CREATE MULTIPLE QUESTIONS
 final createQuestionsProvider =
     FutureProvider.family<void, List<Map<String, dynamic>>>((
-      ref,
-      payload,
-    ) async {
-      final dio = DioClient.instance.dio;
-      try {
-        await dio.post("/quizzes/question-bank", data: payload);
-      } catch (e) {
-        if (e is DioException && e.response?.data != null) {
-          throw Exception(e.response!.data["message"]);
-        }
-        throw Exception("Create failed");
-      }
-    });
+  ref,
+  payload,
+) async {
+  final dio = DioClient.instance.dio;
+  try {
+    await dio.post("/quizzes/question-bank", data: payload);
+  } catch (e) {
+    if (e is DioException && e.response?.data != null) {
+      throw Exception(e.response!.data["message"]);
+    }
+    throw Exception("Create failed");
+  }
+});
 
 // DELETE {DELETE /quizzes/question-bank/:id}
 final deleteQuestionProvider = FutureProvider.family<void, int>((
@@ -124,8 +170,32 @@ class QuizService {
     return res.data;
   }
 
+  final generateAiQuizProvider = FutureProvider.family
+      .autoDispose<List<Map<String, dynamic>>, Map<String, dynamic>>(
+    (ref, payload) async {
+      final dio = DioClient.instance.dio;
 
-/// -----------------------------
+      try {
+        final response = await dio.post(
+          "/quizzes/generate-ai",
+          data: payload,
+        );
+
+        final questions = (response.data["questions"] as List)
+            .map((q) => Map<String, dynamic>.from(q))
+            .toList();
+
+        return questions;
+      } catch (e) {
+        if (e is DioException && e.response?.data != null) {
+          throw Exception(e.response!.data["message"]);
+        }
+        throw Exception("AI generate failed: $e");
+      }
+    },
+  );
+
+  /// -----------------------------
   /// Cập nhật quiz
   /// PATCH /quizzes/:id
   /// -----------------------------

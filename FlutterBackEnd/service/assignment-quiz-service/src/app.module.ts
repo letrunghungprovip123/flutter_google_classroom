@@ -12,6 +12,7 @@ import { CloudinaryService } from './cloudinary/cloudinary.service';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { EmailService } from './email/email.service';
 import { EmailModule } from './email/email.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { EmailModule } from './email/email.module';
     QuizAttemptsModule,
     CloudinaryModule,
     EmailModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService, CloudinaryService, EmailService],
